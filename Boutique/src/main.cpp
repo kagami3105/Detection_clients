@@ -1,63 +1,91 @@
+/*
+  Titre      : Projet pour détecter le nombre de clients qui entre dans une boutique
+  Auteur     : Boladji ODELOUI
+  Date       : 24/02/2025
+  Description: Le programme détecte le nombre de clients qui entre dans une boutique
+  Version    : 0.0.1
+*/
+
 #include <Wire.h>
 #include <DFRobot_RGBLCD1602.h>
 
-DFRobot_RGBLCD1602 lcd(0x2D, 16, 2);
+// Initialisation de l'écran LCD
+DFRobot_RGBLCD1602 lcd(0x2D, 16, 2); // Adresse I2C avec 16 colonnes et 2 lignes sur l'écran
 
-int ledPin = 6;
-int inputPin = 7;
-int clientCount = 0;
-bool lastButtonState = LOW;
-bool ledState = false;
+// Définition des broches
+#define LED_PIN 6   // Broche pour la LED
+#define TAPIS_PIN 7 // Broche pour le capteur de pression au sol
+
+// Les variables globales
+int counter = 0;        // Le compteur du client
+int nbr_total = 0; // Nombre total de clients entré dans la boutique
+bool etat_bouton = LOW; // L'état du capteur de pression au sol
+bool etat_led = false;  // L'état initial de la LED
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600); // Initialisation de la communication série
+
+  // La configuration de l'écran LCD
   lcd.init();
   lcd.print("Clients: ");
   lcd.setCursor(9, 0);
-  lcd.print(clientCount);
+  lcd.print(counter);
   lcd.setCursor(0, 1);
-  lcd.print("LED: OFF"); // Affiche l'état initial de la LED
-  pinMode(ledPin, OUTPUT);
-  pinMode(inputPin, INPUT);
+  lcd.print("Sorties: ");
+  lcd.setCursor(9, 1);
+  lcd.print(nbr_total);
+  lcd.setCursor(11, 1);
+  lcd.print("   OFF");
+
+  // Configuration des broches
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(TAPIS_PIN, INPUT);
 }
 
 void loop()
 {
-  int val = digitalRead(inputPin);
-
-  // Mise à jour du compteur de clients quand le bouton est pressé
-  if (val == HIGH && lastButtonState == LOW)
+  // Condition pour déterminer s'il y a un nouveau client qui est entré
+  if (digitalRead(TAPIS_PIN) == HIGH && etat_bouton == LOW)
   {
-    clientCount++;
+    counter = counter + 1; // Incrémentation du compteur
+    //delay(1000);           // Temps d'attente après l'incrémentation du compteur
+    nbr_total = counter / 2;
+    // Mise à jour de l'Affichage du compteur sur l'écran LCD
     lcd.setCursor(9, 0);
-    lcd.print("    ");
+    lcd.print("   "); // Efface l'ancien nombre pour le compteur
     lcd.setCursor(9, 0);
-    lcd.print(clientCount);
+    lcd.print(counter); // Affiche le compteur
+
+    lcd.setCursor(9, 1);
+    lcd.print("   "); // Efface l'ancien nombre pour le compteur
+    lcd.setCursor(9, 1);
+    lcd.print(nbr_total); 
   }
+  // Mise à jour de l'état précédent du capteur de pression au sol
+  etat_bouton = digitalRead(TAPIS_PIN);
 
-  lastButtonState = val;
+  // Condition pour la gestion de l'état de la LED
 
-  // Contrôle de l'état de la LED et mise à jour de l'affichage
-  if (val == HIGH)
+  if (digitalRead(TAPIS_PIN) == HIGH)
   {
-    digitalWrite(ledPin, LOW);
-    ledState = false; // La LED est éteinte
+    digitalWrite(LED_PIN, LOW); // Eteindre la LED
+    etat_led = false;
   }
   else
   {
-    digitalWrite(ledPin, HIGH);
-    ledState = true; // La LED est allumée
+    digitalWrite(LED_PIN, HIGH); // Allumer la LED
+    etat_led = true;
   }
 
-  // Affiche l'état de la LED
-  lcd.setCursor(5, 1);
-  if (ledState)
+  // Mise à jour de l'affichage de l'État de la LED sur l'écran LCD
+  lcd.setCursor(11, 1);
+  if (etat_led == false)
   {
-    lcd.print(" OFF ");
+    lcd.print("  ON ");
   }
   else
   {
-    lcd.print("ON  ");
+    lcd.print("  OFF");
   }
 }
