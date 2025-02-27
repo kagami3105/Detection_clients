@@ -18,9 +18,12 @@ DFRobot_RGBLCD1602 lcd(0x2D, 16, 2); // Adresse I2C avec 16 colonnes et 2 lignes
 
 // Les variables globales
 int counter = 0;        // Le compteur du client
-int nbr_total = 0; // Nombre total de clients entré dans la boutique
+int nbr_total = 0;      // Nombre total de clients entré dans la boutique
 bool etat_bouton = LOW; // L'état du capteur de pression au sol
 bool etat_led = false;  // L'état initial de la LED
+unsigned long previousMillis = 0;
+bool etat_actuel = false;
+unsigned long currentMillis = 0;
 
 void setup()
 {
@@ -40,6 +43,7 @@ void setup()
 
   // Configuration des broches
   pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
   pinMode(TAPIS_PIN, INPUT);
 }
 
@@ -49,7 +53,7 @@ void loop()
   if (digitalRead(TAPIS_PIN) == HIGH && etat_bouton == LOW)
   {
     counter = counter + 1; // Incrémentation du compteur
-    //delay(1000);           // Temps d'attente après l'incrémentation du compteur
+    // delay(1000);           // Temps d'attente après l'incrémentation du compteur
     nbr_total = counter / 2;
     // Mise à jour de l'Affichage du compteur sur l'écran LCD
     lcd.setCursor(9, 0);
@@ -60,7 +64,7 @@ void loop()
     lcd.setCursor(9, 1);
     lcd.print("   "); // Efface l'ancien nombre pour le compteur
     lcd.setCursor(9, 1);
-    lcd.print(nbr_total); 
+    lcd.print(nbr_total);
   }
   // Mise à jour de l'état précédent du capteur de pression au sol
   etat_bouton = digitalRead(TAPIS_PIN);
@@ -69,23 +73,45 @@ void loop()
 
   if (digitalRead(TAPIS_PIN) == HIGH)
   {
-    digitalWrite(LED_PIN, LOW); // Eteindre la LED
-    etat_led = false;
-  }
-  else
-  {
-    digitalWrite(LED_PIN, HIGH); // Allumer la LED
     etat_led = true;
   }
+  else {
+    etat_led = false;
+  }
+  if (etat_led == true)
+  {
+    digitalWrite(LED_PIN, LOW);
+    if (etat_actuel == false)
+    {
+      currentMillis = millis();
+    }
+    etat_actuel = true;
+  }
+
+  // digitalWrite(LED_PIN, LOW); // Eteindre la LED
+  // etat_led = false;
+  else if (etat_led == false && etat_actuel == true)
+  {
+    if (millis() - currentMillis >= 5000)
+    {
+      etat_actuel = false;
+      digitalWrite(LED_PIN, HIGH);
+    }
+  }
+  // else
+  // {
+  //   // digitalWrite(LED_PIN, HIGH); // Allumer la LED
+  //   etat_led = true;
+  // }
 
   // Mise à jour de l'affichage de l'État de la LED sur l'écran LCD
   lcd.setCursor(11, 1);
   if (etat_led == false)
   {
-    lcd.print("  ON ");
+    lcd.print("  OFF");
   }
   else
   {
-    lcd.print("  OFF");
+    lcd.print("  ON ");
   }
 }
